@@ -1,0 +1,6 @@
+# Text files. We always want LF.
+/.gitattributes text eol=lf
+/README.md text eol=lf
+
+# Patches are special. Keep EOL and what would otherwise be whitespace errors.
+*.patch -text -whitespace

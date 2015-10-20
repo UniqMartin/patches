@@ -1,0 +1,15 @@
+Change-Id: I5c11ee651048832007e2ee4ebcbcf2e3212c8f48
+
+diff -urN a/qtbase/qmake/generators/makefile.cpp b/qtbase/qmake/generators/makefile.cpp
+--- a/qtbase/qmake/generators/makefile.cpp	2015-06-29 22:03:22.000000000 +0200
++++ b/qtbase/qmake/generators/makefile.cpp	2015-07-24 18:31:20.000000000 +0200
+@@ -3253,7 +3253,8 @@
+         int suffix = bundle.lastIndexOf(".framework");
+         if (suffix != -1)
+             bundle = bundle.left(suffix);
+-        pkgConfiglibName = "-framework " + bundle + " ";
++        t << "-framework ";
++        pkgConfiglibName = bundle.toQString();
+     } else {
+         if (!project->values("QMAKE_DEFAULT_LIBDIRS").contains(libDir))
+             t << "-L${libdir} ";

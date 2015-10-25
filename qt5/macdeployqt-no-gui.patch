@@ -1,0 +1,22 @@
+Change-Id: Idb2e3eb36308cd1b6ab7aa1df8f37f0b6f8ab647
+
+diff --git a/qttools/src/macdeployqt/macchangeqt/macchangeqt.pro b/qttools/src/macdeployqt/macchangeqt/macchangeqt.pro
+index 2eafd3e9..bf195f89 100644
+--- a/qttools/src/macdeployqt/macchangeqt/macchangeqt.pro
++++ b/qttools/src/macdeployqt/macchangeqt/macchangeqt.pro
+@@ -1,4 +1,5 @@
+ SOURCES += main.cpp ../shared/shared.cpp
++QT = core
+ LIBS += -framework CoreFoundation
+ 
+ load(qt_app)
+diff --git a/qttools/src/macdeployqt/macdeployqt/macdeployqt.pro b/qttools/src/macdeployqt/macdeployqt/macdeployqt.pro
+index 2eafd3e9..bf195f89 100644
+--- a/qttools/src/macdeployqt/macdeployqt/macdeployqt.pro
++++ b/qttools/src/macdeployqt/macdeployqt/macdeployqt.pro
+@@ -1,4 +1,5 @@
+ SOURCES += main.cpp ../shared/shared.cpp
++QT = core
+ LIBS += -framework CoreFoundation
+ 
+ load(qt_app)

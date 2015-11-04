@@ -1,17 +1,30 @@
 Change-Id: I4395df98771e06a2ce8a293d11dc755bdc50757f
 
 diff --git a/qtbase/configure b/qtbase/configure
-index cea62fbc..679c3cb5 100755
+index cea62fbc..c29c113d 100755
 --- a/qtbase/configure
 +++ b/qtbase/configure
-@@ -6259,6 +6259,10 @@ else
- fi
- if [ "$CFG_RPATH" = "yes" ]; then
-     QT_CONFIG="$QT_CONFIG rpath"
-+else
-+    if [ "$XPLATFORM_MAC" = "yes" ]; then
-+        QMAKE_CONFIG="$QMAKE_CONFIG absolute_library_soname"
-+    fi
- fi
+@@ -2557,7 +2557,9 @@ Additional options:
+     -l <string> ........ Add an explicit library.
  
- if [ '!' -z "$W_FLAGS" ]; then
+     -no-rpath .......... Do not use the library install path as a runtime
+-                         library path.
++                         library path. On Apple platforms, this implies using
++                         absolute install names (based in -libdir) for dynamic
++                         libraries and frameworks.
+  +  -rpath ............. Link Qt libraries and executables using the library
+                          install path as a runtime library path. Equivalent
+                          to -R install_libpath
+diff --git a/qtbase/mkspecs/features/qt_module.prf b/qtbase/mkspecs/features/qt_module.prf
+index c89b6d27..f187b85b 100644
+--- a/qtbase/mkspecs/features/qt_module.prf
++++ b/qtbase/mkspecs/features/qt_module.prf
+@@ -135,6 +135,8 @@ mac {
+ 
+    contains(QT_CONFIG, rpath): \
+        QMAKE_SONAME_PREFIX = @rpath
++   else: \
++       CONFIG += absolute_library_soname
+ }
+ 
+ DEFINES += QT_BUILDING_QT

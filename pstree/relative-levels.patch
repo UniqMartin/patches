@@ -1,0 +1,98 @@
+From e4fcfafb1b6c05ce088992b44b08c25fe5adcfbc Mon Sep 17 00:00:00 2001
+From: Martin Afanasjew <martin@afanasjew.de>
+Date: Thu, 7 Jan 2016 21:42:50 +0100
+Subject: [PATCH] Support limiting tree depth relative to -p
+
+---
+ pstree.1 | 13 +++++++++++++
+ pstree.c | 15 ++++++++++++---
+ 2 files changed, 25 insertions(+), 3 deletions(-)
+
+diff --git a/pstree.1 b/pstree.1
+index 22653f1e..0056276a 100644
+--- a/pstree.1
++++ b/pstree.1
+@@ -73,6 +73,13 @@ Use graphics chars for tree.
+ Show a maximum of 
+ .Ar n
+ levels.
++If
++.Ar n
++starts with a plus sign
++.Pq Sq + ,
++it is interpreted relative to the process specified via
++.Fl p
++instead of the root of the tree.
+ .It Fl p Ar pid
+ Show only parents and descendants of the process
+ .Ar pid .
+@@ -115,6 +122,12 @@ Show process number
+ and its parents and descendants:
+ .Pp
+ .Cm $ pstree -p 15495
++.Pp
++Show process number
++.Dq \&15495
++and its parents, but no descendants:
++.Pp
++.Cm $ pstree -l +1 -p 15495
+ .Sh SEE ALSO
+ .Xr ps 1 ,
+ .Xr top 1
+diff --git a/pstree.c b/pstree.c
+index 7d92f8ed..46180c5a 100644
+--- a/pstree.c
++++ b/pstree.c
+@@ -212,6 +212,7 @@ static char *input = NULL;
+ 
+ static int atLdepth=0;    /* LOPTION - track how deep in the print chain we are */
+ static int maxLdepth=100; /* LOPTION - will be changed by -l n option */
++static int relLdepth = FALSE;
+ static int compress = FALSE;
+ 
+ #ifdef DEBUG
+@@ -707,8 +708,8 @@ static void PrintTree(int idx, const char *head) {
+   if (P[idx].thcount > 1) snprintf(thread, sizeof(thread), "[%ld]", P[idx].thcount);
+  
+   if(atLdepth == maxLdepth) return;    /* LOPTION */
+-  ++atLdepth;                          /* LOPTION */
+- 
++  if (!relLdepth || atLdepth > 0) ++atLdepth;
++  if (relLdepth && ipid == P[idx].pid) atLdepth = 1;
+   
+   snprintf(out, sizeof(out),
+ 	   "%s%s%s%s%s%s %05ld %s %s%s" /*" (ch=%d, si=%d, pr=%d)"*/,
+@@ -771,7 +772,9 @@ static void Usage(void) {
+ 	  "   -f file   read input from <file> (- is stdin) instead of running\n"
+ 	  "             \"%s\"\n"
+ 	  "   -g n      use graphics chars for tree. n=1: IBM-850, n=2: VT100, n=3: UTF-8\n"
+-	  "   -l n      print tree to n level deep\n"
++	  "   -l n      print tree to <n> level deep. if <n> starts with a plus sign (+),\n"
++          "             it is interpreted relative to the process specified via -p instead\n"
++          "             of the root of the tree\n"
+ 	  "   -u user   show only branches containing processes of <user>\n"
+ 	  "   -U        don't show branches containing only root processes\n"
+           "   -s string show only branches containing process with <string> in commandline\n"
+@@ -824,6 +827,10 @@ int main(int argc, char **argv) {
+       C = &TreeChars[graph];
+       break;
+     case 'l':                                 /* LOPTION */
++      if ('+' == *optarg) {
++        relLdepth = TRUE;
++        optarg++;
++      }
+       maxLdepth = atoi(optarg);               /* LOPTION */
+       if(maxLdepth < 1) maxLdepth = 1;        /* LOPTION */
+       break;                                  /* LOPTION */
+@@ -862,6 +869,8 @@ int main(int argc, char **argv) {
+       Usage();
+       break;
+     }
++
++  if (relLdepth && ipid == -1) relLdepth = FALSE;
+   
+ #ifdef USE_GetProcessesDirect
+   NProc = input == NULL ? GetProcessesDirect() : GetProcesses();
+-- 
+2.5.4 (Apple Git-61)
+

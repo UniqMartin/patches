@@ -1,0 +1,126 @@
+From 808f9b776c5eda005d55c9dfbb506e9b683d4223 Mon Sep 17 00:00:00 2001
+From: Martin Afanasjew <martin@afanasjew.de>
+Date: Fri, 15 Jan 2016 11:48:44 +0100
+Subject: [PATCH] Allow exclusion of self (with children) with -X
+
+---
+ pstree.1 |  4 +++-
+ pstree.c | 28 +++++++++++++++++++++-------
+ 2 files changed, 24 insertions(+), 8 deletions(-)
+
+diff --git a/pstree.1 b/pstree.1
+index 22653f1e..84824690 100644
+--- a/pstree.1
++++ b/pstree.1
+@@ -23,7 +23,7 @@
+ .Nd list processes as a tree
+ .Sh SYNOPSIS
+ .Nm pstree
+-.Op Fl Uw
++.Op Fl UwX
+ .Op Fl f Ar file
+ .Op Fl g Ar n
+ .Op Fl l Ar n
+@@ -87,6 +87,8 @@ Show only parents and descendants of processes of
+ .Ar user .
+ .It Fl w
+ Wide output, not truncated to terminal width.
++.It Fl X
++Exclude the pstree process and its children from the tree.
+ .El
+ .Sh ENVIRONMENT
+ .Bl -tag -width COLUMNS
+diff --git a/pstree.c b/pstree.c
+index 7d92f8ed..02a43b0f 100644
+--- a/pstree.c
++++ b/pstree.c
+@@ -213,6 +213,7 @@ static char *input = NULL;
+ static int atLdepth=0;    /* LOPTION - track how deep in the print chain we are */
+ static int maxLdepth=100; /* LOPTION - will be changed by -l n option */
+ static int compress = FALSE;
++static int exclude_self = FALSE;
+ 
+ #ifdef DEBUG
+ static int debug = FALSE;
+@@ -631,11 +632,11 @@ static void MakeTree(void) {
+   }
+ }
+ 
+-static void MarkChildren(int me) {
++static void MarkChildren(int me, int print) {
+   int child;
+-  P[me].print = TRUE;
++  P[me].print = print;
+   for (child = P[me].child; EXIST(child); child = P[child].sister)
+-    MarkChildren(child);
++    MarkChildren(child, print);
+ }
+ 
+ static void MarkProcs(void) {
+@@ -658,7 +659,7 @@ static void MarkProcs(void) {
+ 	  P[parent].print = TRUE;
+ 	}
+ 	/* Mark children */
+-	MarkChildren(me);
++	MarkChildren(me, TRUE);
+       }
+     }
+ #if 0 /* experimental thread compression */
+@@ -680,6 +681,15 @@ static void MarkProcs(void) {
+     }
+ #endif
+   }
++
++  if (exclude_self) {
++    for (me = 0; me < NProc; me++) {
++      if (P[me].pid == MyPid) {
++        MarkChildren(me, FALSE);
++        break;
++      }
++    }
++  }
+ }
+ 
+ static void DropProcs(void) {
+@@ -763,7 +773,7 @@ static void Usage(void) {
+ #ifdef DEBUG
+ 	  "[-d] "
+ #endif
+-	  "[-f file] [-g n] [-l n] [-u user] [-U] [-s string] [-p pid] [-w] [pid ...]\n"
++	  "[-f file] [-g n] [-l n] [-u user] [-U] [-s string] [-p pid] [-w] [-X] [pid ...]\n"
+ 	  /*"   -a        align output\n"*/
+ #ifdef DEBUG
+ 	  "   -d        print debugging info to stderr\n"
+@@ -777,8 +787,9 @@ static void Usage(void) {
+           "   -s string show only branches containing process with <string> in commandline\n"
+           "   -p pid    show only branches containing process <pid>\n"
+ 	  "   -w        wide output, not truncated to window width\n"
++	  "   -X        exclude the %s process and its children\n"
+ 	  "   pid ...   process ids to start from, default is 1 (probably init)\n"
+-	  , WhatString[0] + 4, WhatString[1] + 4, Progname, PSCMD);
++	  , WhatString[0] + 4, WhatString[1] + 4, Progname, PSCMD, Progname);
+ #ifdef HAS_PGID
+   fprintf(stderr, "\n%sProcess group leaders are marked with '%s%s%s'.\n",
+ 	  C->init, C->sg, C->pgl, C->eg);
+@@ -798,7 +809,7 @@ int main(int argc, char **argv) {
+   Progname = strrchr(argv[0],'/');
+   Progname = (NULL == Progname) ? argv[0] : Progname + 1;
+   
+-  while ((ch = getopt(argc, argv, "cdf:g:hl:p:s:u:Uw?")) != EOF)
++  while ((ch = getopt(argc, argv, "cdf:g:hl:p:s:u:UwX?")) != EOF)
+     switch(ch) {
+       /*case 'a':
+ 	align   = TRUE;
+@@ -856,6 +867,9 @@ int main(int argc, char **argv) {
+     case 'w':
+       wide    = TRUE;
+       break;
++    case 'X':
++      exclude_self = TRUE;
++      break;
+     case 'h':
+     case '?':
+     default :
+-- 
+2.5.4 (Apple Git-61)
+
